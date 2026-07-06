@@ -1,0 +1,37 @@
+@page
+@model RevelioII.Pages.Relationships.CreateModel
+@{
+    ViewData["Title"] = "Create Relationship";
+}
+
+<h1>Create Relationship</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div class="form-group mb-3">
+                <label asp-for="GraphRelationship.SourceNodeId" class="control-label">Source Node</label>
+                <select asp-for="GraphRelationship.SourceNodeId" class="form-control" asp-items="Model.NodesList"></select>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="GraphRelationship.TargetNodeId" class="control-label">Target Node</label>
+                <select asp-for="GraphRelationship.TargetNodeId" class="form-control" asp-items="Model.NodesList"></select>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="GraphRelationship.RelationType" class="control-label"></label>
+                <input asp-for="GraphRelationship.RelationType" class="form-control" />
+                <span asp-validation-for="GraphRelationship.RelationType" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="GraphRelationship.Properties" class="control-label"></label>
+                <input asp-for="GraphRelationship.Properties" class="form-control" placeholder="{""weight"": ""1""}" />
+                <span asp-validation-for="GraphRelationship.Properties" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+                <a asp-page="Index" class="btn btn-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>

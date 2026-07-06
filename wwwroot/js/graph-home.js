@@ -1,0 +1,213 @@
+(() => {
+    const graphContainer = document.getElementById("graph-container");
+    const hoverContent = document.getElementById("graph-hover-content");
+    const hoverPanel = document.getElementById("graph-hover-panel");
+    const emptyState = document.getElementById("graph-empty-state");
+
+    if (!graphContainer || typeof cytoscape === "undefined") {
+        return;
+    }
+
+    const graphUrl = graphContainer.dataset.graphUrl;
+    const highlightClass = "graph-highlight";
+
+    fetch(graphUrl, {
+        headers: {
+            Accept: "application/json"
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Unable to load graph data.");
+            }
+
+            return response.json();
+        })
+        .then(graph => {
+            const nodes = graph.nodes ?? [];
+            const edges = graph.edges ?? [];
+
+            if (nodes.length === 0) {
+                graphContainer.classList.add("d-none");
+                emptyState?.classList.remove("d-none");
+                return;
+            }
+
+            emptyState?.classList.add("d-none");
+            renderGraph(nodes, edges);
+            setDefaultHoverMessage(nodes.length, edges.length);
+        })
+        .catch(error => {
+            console.error("Failed to load or render graph data.", error);
+            hoverPanel?.classList.add("graph-panel-error");
+            hoverContent.innerHTML = `<p class="graph-panel-empty">Unable to load graph data.</p><p class="graph-panel-muted">${escapeHtml(error?.message ?? "Unknown graph error.")}</p>`;
+        });
+
+    function renderGraph(nodes, edges) {
+        const elements = [
+            ...nodes.map(node => ({
+                data: {
+                    id: getNodeId(node.id),
+                    nodeId: node.id,
+                    label: node.label,
+                    type: node.type,
+                    properties: node.properties ?? ""
+                }
+            })),
+            ...edges.map(edge => ({
+                data: {
+                    id: getEdgeId(edge.id),
+                    edgeId: edge.id,
+                    source: getNodeId(edge.sourceNodeId),
+                    target: getNodeId(edge.targetNodeId),
+                    label: edge.relationType,
+                    relationType: edge.relationType,
+                    sourceLabel: edge.sourceLabel,
+                    targetLabel: edge.targetLabel,
+                    properties: edge.properties ?? ""
+                }
+            }))
+        ];
+
+        const cy = cytoscape({
+            container: graphContainer,
+            elements,
+            layout: {
+                name: "cose",
+                animate: true,
+                fit: true,
+                padding: 90,
+                nodeRepulsion: 700000,
+                idealEdgeLength: 240,
+                edgeElasticity: 80,
+                nestingFactor: 0.9
+            },
+            minZoom: 0.25,
+            maxZoom: 2,
+            wheelSensitivity: 0.12,
+            style: [
+                {
+                    selector: "node",
+                    style: {
+                        label: "data(label)",
+                        color: "#7dd1ff",
+                        "font-size": 11,
+                        "font-weight": 700,
+                        "text-wrap": "wrap",
+                        "text-max-width": 100,
+                        "text-valign": "center",
+                        "text-halign": "center",
+                        width: 92,
+                        height: 92,
+                        shape: "ellipse",
+                        "background-color": "#214c7d",
+                        "background-image": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><radialGradient id='g' cx='35%25' cy='28%25' r='70%25'><stop offset='0%25' stop-color='rgba(255,255,255,0.95)'/><stop offset='32%25' stop-color='rgba(255,255,255,0.52)'/><stop offset='68%25' stop-color='rgba(255,255,255,0.10)'/><stop offset='100%25' stop-color='rgba(255,255,255,0)'/></radialGradient></defs><circle cx='50' cy='50' r='50' fill='url(%23g)'/></svg>",
+                        "background-fit": "cover",
+                        "background-clip": "none",
+                        "border-width": 2,
+                        "border-color": "#79cfff",
+                        "overlay-opacity": 0,
+                        "text-outline-width": 0,
+                        "shadow-blur": 18,
+                        "shadow-color": "rgba(35, 150, 255, 0.25)",
+                        "shadow-opacity": 1,
+                        "shadow-offset-x": 0,
+                        "shadow-offset-y": 0
+                    }
+                },
+                {
+                    selector: "edge",
+                    style: {
+                        label: "data(label)",
+                        width: 1.4,
+                        color: "#7da9c7",
+                        "font-size": 8,
+                        "font-weight": 500,
+                        "text-background-opacity": 0,
+                        "line-color": "#1e3f67",
+                        "target-arrow-color": "#1e3f67",
+                        "target-arrow-shape": "none",
+                        "curve-style": "bezier",
+                        "overlay-opacity": 0,
+                        opacity: 0.92
+                    }
+                },
+                {
+                    selector: `node.${highlightClass}`,
+                    style: {
+                        opacity: 1,
+                        "border-color": "#ffffff",
+                        "border-width": 3,
+                        "shadow-blur": 24,
+                        "shadow-color": "rgba(255, 255, 255, 0.22)",
+                        "shadow-opacity": 1,
+                        "shadow-offset-x": 0,
+                        "shadow-offset-y": 0,
+                        "z-index": 999
+                    }
+                }
+            ]
+        });
+
+        cy.ready(() => {
+            cy.fit(cy.elements(), 90);
+            cy.center();
+        });
+
+        cy.on("mouseover", "node", event => {
+            const node = event.target;
+            cy.elements().removeClass(highlightClass);
+            node.addClass(highlightClass);
+
+            updateHoverPanel(node, node.connectedEdges().map(edge => edge.data()));
+        });
+
+        cy.on("mouseout", "node", () => {
+            cy.elements().removeClass(highlightClass);
+            setDefaultHoverMessage(nodes.length, edges.length);
+        });
+    }
+
+    function updateHoverPanel(node, connectedEdges) {
+        const relationshipsMarkup = connectedEdges.length === 0
+            ? '<p class="graph-panel-empty">This node has no relationships yet.</p>'
+            : `<ul class="graph-relationship-list">${connectedEdges.map(edge => {
+                const isSource = edge.source === node.id();
+                const otherNodeLabel = isSource ? edge.targetLabel : edge.sourceLabel;
+                const direction = isSource ? "to" : "from";
+                return `<li><span class="graph-relationship-type">${escapeHtml(edge.relationType)}</span> ${direction} <strong>${escapeHtml(otherNodeLabel)}</strong></li>`;
+            }).join("")}</ul>`;
+
+        hoverContent.innerHTML = `
+            <div class="graph-hover-node-title">${escapeHtml(node.data("label"))}</div>
+            <div class="graph-hover-node-meta">Type: ${escapeHtml(node.data("type"))}</div>
+            <div class="graph-hover-node-meta">Connections: ${connectedEdges.length}</div>
+            ${relationshipsMarkup}
+        `;
+    }
+
+    function setDefaultHoverMessage(nodeCount, edgeCount) {
+        hoverPanel?.classList.remove("graph-panel-error");
+        hoverContent.innerHTML = `
+            <p class="graph-panel-muted">${nodeCount} nodes and ${edgeCount} relationships are currently visible.</p>
+            <p class="graph-panel-empty">Hover a node to see every direct relationship it has with other nodes.</p>
+        `;
+    }
+
+    function getNodeId(id) {
+        return `node-${id}`;
+    }
+
+    function getEdgeId(id) {
+        return `edge-${id}`;
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#39;");
+    }
+})();

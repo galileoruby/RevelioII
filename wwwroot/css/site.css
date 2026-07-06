@@ -1,0 +1,226 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+.graph-page-shell {
+  min-height: calc(100vh - 76px);
+  padding: 0;
+  background: linear-gradient(180deg, #08192f 0%, #091d37 100%);
+}
+
+.graph-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: end;
+  padding: 1.25rem 1.5rem 0.75rem;
+}
+
+.graph-page-title {
+  margin: 0;
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  font-weight: 700;
+  color: #7dd1ff;
+}
+
+.graph-page-subtitle {
+  margin: 0.5rem 0 0;
+  max-width: 52rem;
+  color: #89a8c4;
+  font-size: 0.98rem;
+}
+
+.graph-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.graph-action-btn {
+  border: 1px solid rgba(125, 209, 255, 0.28);
+  color: #a7c9e6;
+  background: rgba(12, 29, 52, 0.8);
+}
+
+.graph-action-btn:hover,
+.graph-action-btn:focus {
+  border-color: #7dd1ff;
+  color: #d8f3ff;
+  background: rgba(18, 54, 93, 0.95);
+}
+
+.graph-stage {
+  position: relative;
+  min-height: calc(100vh - 160px);
+  overflow: hidden;
+}
+
+.graph-panel-card,
+.graph-canvas,
+.graph-empty-state {
+  border: 1px solid rgba(125, 209, 255, 0.12);
+  border-radius: 1rem;
+}
+
+.graph-panel-card {
+  background: rgba(10, 25, 47, 0.76);
+  backdrop-filter: blur(12px);
+  padding: 1rem 1.1rem;
+  box-shadow: 0 16px 32px rgba(2, 10, 22, 0.35);
+}
+
+.graph-panel-card h2 {
+  margin-bottom: 0.6rem;
+  color: #7dd1ff;
+  font-size: 1rem;
+}
+
+.graph-panel-muted,
+.graph-panel-empty,
+.graph-hover-node-meta {
+  color: #89a8c4;
+}
+
+.graph-hover-content {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.graph-hover-node-title {
+  color: #d9f3ff;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.graph-relationship-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #c4d8ea;
+}
+
+.graph-relationship-type {
+  display: inline-block;
+  margin-right: 0.2rem;
+  color: #7dd1ff;
+  font-weight: 700;
+}
+
+.graph-panel-error {
+  border-color: rgba(255, 102, 102, 0.3);
+}
+
+.graph-panel-card-compact {
+  width: min(320px, calc(100vw - 2rem));
+}
+
+.graph-stage-overlay {
+  position: absolute;
+  z-index: 2;
+  top: 1rem;
+}
+
+.graph-stage-overlay-left {
+  left: 1rem;
+}
+
+.graph-stage-overlay-right {
+  right: 1rem;
+}
+
+.graph-legend {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+}
+
+.graph-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #c4d8ea;
+}
+
+.graph-legend-node {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  border: 2px solid #79cfff;
+  background: radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.44) 18%, rgba(255, 255, 255, 0.08) 34%, #214c7d 76%);
+}
+
+.graph-legend-edge {
+  display: inline-block;
+  width: 2.25rem;
+  height: 0;
+  border-top: 2px solid #1e3f67;
+}
+
+.graph-canvas,
+.graph-empty-state {
+  min-height: calc(100vh - 160px);
+}
+
+.graph-canvas {
+  background: linear-gradient(180deg, #07172c 0%, #08192f 100%);
+}
+
+.graph-empty-state {
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 0.85rem;
+  background: rgba(8, 25, 47, 0.96);
+  padding: 2rem;
+}
+
+.graph-empty-state h2 {
+  color: #d9f3ff;
+}
+
+@media (max-width: 991.98px) {
+  .graph-stage-overlay {
+    position: static;
+    padding: 0 1rem 1rem;
+  }
+
+  .graph-canvas,
+  .graph-empty-state {
+    min-height: 60vh;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .graph-page-header {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

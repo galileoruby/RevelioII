@@ -1,0 +1,38 @@
+@page "/relationships"
+@model RevelioII.Pages.Relationships.IndexModel
+@{
+    ViewData["Title"] = "Relationships";
+}
+
+<h1>Relationships</h1>
+
+<p>
+    <a asp-page="Create" class="btn btn-primary">Create New</a>
+    <a asp-page="/Nodes/Index" class="btn btn-outline-secondary">Go to Nodes</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Source Node</th>
+            <th>Target Node</th>
+            <th>Type</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Relationships)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>[@item.SourceNodeId] @item.SourceNode?.Label</td>
+                <td>[@item.TargetNodeId] @item.TargetNode?.Label</td>
+                <td>@item.RelationType</td>
+                <td>
+                    <a asp-page="./Edit" asp-route-id="@item.Id">Edit</a> |
+                    <a asp-page="./Delete" asp-route-id="@item.Id">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

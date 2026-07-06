@@ -1,0 +1,34 @@
+@page
+@model RevelioII.Pages.Nodes.CreateModel
+@{
+    ViewData["Title"] = "Create Node";
+}
+
+<h1>Create Node</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div class="form-group mb-3">
+                <label asp-for="GraphNode.Type" class="control-label"></label>
+                <input asp-for="GraphNode.Type" class="form-control" />
+                <span asp-validation-for="GraphNode.Type" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="GraphNode.Label" class="control-label"></label>
+                <input asp-for="GraphNode.Label" class="form-control" />
+                <span asp-validation-for="GraphNode.Label" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="GraphNode.Properties" class="control-label"></label>
+                <input asp-for="GraphNode.Properties" class="form-control" placeholder="{""key"": ""value""}" />
+                <span asp-validation-for="GraphNode.Properties" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+                <a asp-page="Index" class="btn btn-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>

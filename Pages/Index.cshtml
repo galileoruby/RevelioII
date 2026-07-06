@@ -1,0 +1,65 @@
+﻿@page "/"
+@model IndexModel
+@{
+    ViewData["Title"] = "Graph";
+    ViewData["FullWidth"] = true;
+}
+
+<section class="graph-page-shell">
+    <div class="graph-page-header">
+        <div>
+            <h1 class="graph-page-title">RevelioII</h1>
+            <p class="graph-page-subtitle">Graph-first exploration of every node and relationship.</p>
+        </div>
+        <div class="graph-page-actions">
+            <a class="btn graph-action-btn" asp-page="/Nodes/Index">Nodes</a>
+            <a class="btn graph-action-btn" asp-page="/Relationships/Index">Relations</a>
+        </div>
+    </div>
+
+    <section class="graph-stage">
+        <div id="graph-empty-state" class="graph-empty-state d-none">
+            <h2>No graph data yet</h2>
+            <p>Create nodes and relationships to bring the graph to life.</p>
+            <div class="graph-page-actions justify-content-center">
+                <a class="btn btn-primary" asp-page="/Nodes/Create">Create Node</a>
+                <a class="btn btn-outline-primary" asp-page="/Relationships/Create">Create Relationship</a>
+            </div>
+        </div>
+
+        <div class="graph-stage-overlay graph-stage-overlay-left">
+            <section class="graph-panel-card graph-panel-card-compact">
+                <h2>Explore</h2>
+                <p>Hover a node to reveal every direct relationship.</p>
+                <div class="graph-legend">
+                    <div class="graph-legend-item">
+                        <span class="graph-legend-node"></span>
+                        <span>Node</span>
+                    </div>
+                    <div class="graph-legend-item">
+                        <span class="graph-legend-edge"></span>
+                        <span>Relation</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="graph-stage-overlay graph-stage-overlay-right">
+            <section class="graph-panel-card graph-panel-card-compact" id="graph-hover-panel">
+                <h2>Relationship details</h2>
+                <div id="graph-hover-content" class="graph-hover-content">
+                    <p class="graph-panel-empty">Hover a node to inspect its connections.</p>
+                </div>
+            </section>
+        </div>
+
+        <div id="graph-container"
+             class="graph-canvas"
+             data-graph-url="@Url.Page("/Index", pageHandler: "GraphData")"></div>
+    </section>
+</section>
+
+@section Scripts {
+    <script src="https://unpkg.com/cytoscape@3.29.2/dist/cytoscape.min.js"></script>
+    <script src="~/js/graph-home.js" asp-append-version="true"></script>
+}
