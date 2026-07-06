@@ -1,0 +1,70 @@
+﻿@page "/"
+@model IndexModel
+@{
+    ViewData["Title"] = "Graph";
+    ViewData["FullWidth"] = true;
+}
+
+<section class="graph-page-shell">
+    <div class="graph-page-header">
+        <div>
+            <h1 class="graph-page-title">RevelioII</h1>
+            <p class="graph-page-subtitle">
+                Explore every available connection between your nodes in one graph-first view.
+            </p>
+        </div>
+        <div class="graph-page-actions">
+            <a class="btn btn-light" asp-page="/Nodes/Index">Manage Nodes</a>
+            <a class="btn btn-outline-light" asp-page="/Relationships/Index">Manage Relationships</a>
+        </div>
+    </div>
+
+    <div class="graph-page-content">
+        <aside class="graph-side-panel">
+            <section class="graph-panel-card">
+                <h2>How to explore</h2>
+                <p>Hover a node to reveal every direct relationship and highlight all connected nodes.</p>
+                <div class="graph-legend">
+                    <div class="graph-legend-item">
+                        <span class="graph-legend-node"></span>
+                        <span>Magic node</span>
+                    </div>
+                    <div class="graph-legend-item">
+                        <span class="graph-legend-edge"></span>
+                        <span>Relationship</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="graph-panel-card" id="graph-hover-panel">
+                <h2>Relationship details</h2>
+                <p class="graph-panel-muted">Move your mouse over a node to inspect its connected relationships.</p>
+                <div id="graph-hover-content" class="graph-hover-content">
+                    <p class="graph-panel-empty">No node selected yet.</p>
+                </div>
+            </section>
+        </aside>
+
+        <section class="graph-canvas-panel">
+            <div id="graph-empty-state" class="graph-empty-state d-none">
+                <h2>No graph data yet</h2>
+                <p>Create nodes and relationships to bring the graph to life.</p>
+                <div class="graph-page-actions justify-content-center">
+                    <a class="btn btn-primary" asp-page="/Nodes/Create">Create Node</a>
+                    <a class="btn btn-outline-primary" asp-page="/Relationships/Create">Create Relationship</a>
+                </div>
+            </div>
+            <div id="graph-container"
+                 class="graph-canvas"
+                 data-graph-url="@Url.Page("/Index", pageHandler: "GraphData")"></div>
+            <div class="graph-canvas-caption">
+                All available connections are rendered here. Pan, zoom, and hover to inspect the graph.
+            </div>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="https://unpkg.com/cytoscape@3.29.2/dist/cytoscape.min.js"></script>
+    <script src="~/js/graph-home.js" asp-append-version="true"></script>
+}

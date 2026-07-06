@@ -1,0 +1,31 @@
+﻿@page "/"
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center mb-4">
+    <h1 class="display-4">RevelioII Graph Manager</h1>
+    <p>Manage nodes and relationships from the links below.</p>
+</div>
+
+<div class="row g-3 justify-content-center">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h2 class="h4">Nodes</h2>
+                <p>Create, edit, and delete graph nodes.</p>
+                <a class="btn btn-primary" asp-page="/Nodes/Index">Open Nodes</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h2 class="h4">Relationships</h2>
+                <p>Manage links between existing nodes.</p>
+                <a class="btn btn-outline-primary" asp-page="/Relationships/Index">Open Relationships</a>
+            </div>
+        </div>
+    </div>
+</div>
