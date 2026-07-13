@@ -1,4 +1,4 @@
 <Solution>
-  <Project Path="../RevelioII.UnitTests/RevelioII.UnitTests.csproj" />
+  <Project Path="RevelioII.UnitTests/RevelioII.UnitTests.csproj" />
   <Project Path="RevelioII.csproj" />
 </Solution>

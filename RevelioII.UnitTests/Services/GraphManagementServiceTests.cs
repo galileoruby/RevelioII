@@ -2,6 +2,7 @@
 using RevelioII.Models;
 using RevelioII.Repositories;
 using RevelioII.Services;
+using Xunit;
 
 namespace RevelioII.UnitTests.Services
 {
