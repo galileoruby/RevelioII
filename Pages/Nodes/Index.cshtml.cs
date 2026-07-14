@@ -16,9 +16,9 @@ namespace RevelioII.Pages.Nodes
 
         public IEnumerable<Node> Nodes { get; set; } = new List<Node>();
 
-        public async Task OnGetAsync()
+        public async Task OnGetAsync(CancellationToken cancellationToken)
         {
-            Nodes = await _service.GetAllNodesAsync();
+            Nodes = await _service.GetAllNodesAsync(cancellationToken);
         }
     }
 }

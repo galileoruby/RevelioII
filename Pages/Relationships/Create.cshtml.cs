@@ -20,22 +20,22 @@ namespace RevelioII.Pages.Relationships
 
         public SelectList NodesList { get; set; } = default!;
 
-        public async Task OnGetAsync()
+        public async Task OnGetAsync(CancellationToken cancellationToken)
         {
-            var nodes = await _service.GetAllNodesAsync();
+            var nodes = await _service.GetAllNodesAsync(cancellationToken);
             NodesList = new SelectList(nodes, "Id", "Label");
         }
 
-        public async Task<IActionResult> OnPostAsync()
+        public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid)
             {
-                var nodes = await _service.GetAllNodesAsync();
+                var nodes = await _service.GetAllNodesAsync(cancellationToken);
                 NodesList = new SelectList(nodes, "Id", "Label");
                 return Page();
             }
 
-            await _service.CreateRelationshipAsync(GraphRelationship);
+            await _service.CreateRelationshipAsync(GraphRelationship, cancellationToken);
             return RedirectToPage("./Index");
         }
     }

@@ -1,4 +1,5 @@
 ﻿using Moq;
+using Moq.Protected;
 using RevelioII.Models;
 using RevelioII.Repositories;
 using RevelioII.Services;
@@ -160,6 +161,66 @@ namespace RevelioII.UnitTests.Services
             Assert.Same(createdNode, result);
             repositoryMock.Verify(repository => repository.AddNodeAsync(node), Times.Once);
         }
+
+        [Fact]
+        public async Task GetGraphViewAsync_WhenCancellationTokenIsProvided_ForwardsTokenToRepository()
+        {
+            // Arrange
+            var cancellationToken = new CancellationTokenSource().Token;
+            var repositoryMock = new Mock<IGraphRepository>();
+            repositoryMock
+                .Setup(repository => repository.GetGraphAsync(cancellationToken))
+                .ReturnsAsync((Array.Empty<Node>(), Array.Empty<Relationship>()));
+
+            var service = new GraphManagementService(repositoryMock.Object);
+
+            // Act
+            await service.GetGraphViewAsync(cancellationToken);
+
+            // Assert
+            repositoryMock.Verify(repository => repository.GetGraphAsync(cancellationToken), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateNodeAsync_WhenCancellationTokenIsProvided_ForwardsTokenToRepositoryAndNotification()
+        {
+            // Arrange
+            var node = new Node { Id = 0, Label = "Gamma", Type = "Device", Properties = null };
+            var createdNode = new Node { Id = 1, Label = "Gamma", Type = "Device", Properties = null };
+            using var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
+
+            var repositoryMock = new Mock<IGraphRepository>();
+            repositoryMock
+                .Setup(repository => repository.AddNodeAsync(node, cancellationToken))
+                .ReturnsAsync(createdNode);
+
+            using var httpClient = CreateHttpClient((request, token) =>
+            {
+                Assert.True(token.CanBeCanceled);
+                Assert.Equal(HttpMethod.Post, request.Method);
+                return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK));
+            });
+
+            var originalWebhookUrl = Environment.GetEnvironmentVariable("SLACK_WEBHOOK_URL");
+            Environment.SetEnvironmentVariable("SLACK_WEBHOOK_URL", "https://example.test/slack");
+
+            try
+            {
+                var service = new GraphManagementService(repositoryMock.Object, httpClient);
+
+                // Act
+                var result = await service.CreateNodeAsync(node, cancellationToken);
+
+                // Assert
+                Assert.Same(createdNode, result);
+                repositoryMock.Verify(repository => repository.AddNodeAsync(node, cancellationToken), Times.Once);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("SLACK_WEBHOOK_URL", originalWebhookUrl);
+            }
+        }
         [Fact]
         public async Task CreateRelationshipAsync_WhenSourceAndTargetNodesExist_ReturnsCreatedRelationship()
         {
@@ -204,6 +265,45 @@ namespace RevelioII.UnitTests.Services
             repositoryMock.Verify(repository => repository.GetNodeByIdAsync(1), Times.Once);
             repositoryMock.Verify(repository => repository.GetNodeByIdAsync(2), Times.Once);
             repositoryMock.Verify(repository => repository.AddRelationshipAsync(relationship), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateRelationshipAsync_WhenCancellationTokenIsProvided_ForwardsTokenToRepositoryCalls()
+        {
+            // Arrange
+            var cancellationToken = new CancellationTokenSource().Token;
+            var relationship = new Relationship
+            {
+                SourceNodeId = 1,
+                TargetNodeId = 2,
+                RelationType = "connects-to",
+                Properties = null,
+            };
+            var sourceNode = new Node { Id = 1, Label = "Source", Type = "System", Properties = null };
+            var targetNode = new Node { Id = 2, Label = "Target", Type = "System", Properties = null };
+            var createdRelationship = new Relationship { Id = 9, SourceNodeId = 1, TargetNodeId = 2, RelationType = "connects-to" };
+
+            var repositoryMock = new Mock<IGraphRepository>();
+            repositoryMock
+                .Setup(repository => repository.GetNodeByIdAsync(1, cancellationToken))
+                .ReturnsAsync(sourceNode);
+            repositoryMock
+                .Setup(repository => repository.GetNodeByIdAsync(2, cancellationToken))
+                .ReturnsAsync(targetNode);
+            repositoryMock
+                .Setup(repository => repository.AddRelationshipAsync(relationship, cancellationToken))
+                .ReturnsAsync(createdRelationship);
+
+            var service = new GraphManagementService(repositoryMock.Object);
+
+            // Act
+            var result = await service.CreateRelationshipAsync(relationship, cancellationToken);
+
+            // Assert
+            Assert.Same(createdRelationship, result);
+            repositoryMock.Verify(repository => repository.GetNodeByIdAsync(1, cancellationToken), Times.Once);
+            repositoryMock.Verify(repository => repository.GetNodeByIdAsync(2, cancellationToken), Times.Once);
+            repositoryMock.Verify(repository => repository.AddRelationshipAsync(relationship, cancellationToken), Times.Once);
         }
 
         [Fact]
@@ -437,6 +537,48 @@ namespace RevelioII.UnitTests.Services
             // Assert
             Assert.Same(deleteTask, result);
             repositoryMock.Verify(repository => repository.DeleteRelationshipAsync(relationshipId), Times.Once);
+        }
+
+        [Fact]
+        public async Task NotifySlackAsync_WhenCancellationTokenIsProvided_ForwardsTokenToHttpClient()
+        {
+            // Arrange
+            var cancellationToken = new CancellationTokenSource().Token;
+            var originalWebhookUrl = Environment.GetEnvironmentVariable("SLACK_WEBHOOK_URL");
+            Environment.SetEnvironmentVariable("SLACK_WEBHOOK_URL", "https://example.test/slack");
+
+            try
+            {
+                using var httpClient = CreateHttpClient((request, token) =>
+                {
+                    Assert.True(token.CanBeCanceled);
+                    Assert.Equal(HttpMethod.Post, request.Method);
+                    return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK));
+                });
+                var repositoryMock = new Mock<IGraphRepository>();
+                var service = new GraphManagementService(repositoryMock.Object, httpClient);
+
+                // Act
+                await service.NotifySlackAsync("hello", cancellationToken);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("SLACK_WEBHOOK_URL", originalWebhookUrl);
+            }
+        }
+
+        private static HttpClient CreateHttpClient(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> sendAsync)
+        {
+            var handlerMock = new Mock<HttpMessageHandler>();
+            handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .Returns(sendAsync);
+
+            return new HttpClient(handlerMock.Object);
         }
 
 

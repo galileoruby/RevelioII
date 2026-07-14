@@ -15,9 +15,9 @@ namespace RevelioII.Pages.Relationships
 
         public IEnumerable<Relationship> Relationships { get; set; } = new List<Relationship>();
 
-        public async Task OnGetAsync()
+        public async Task OnGetAsync(CancellationToken cancellationToken)
         {
-            Relationships = await _service.GetAllRelationshipsAsync();
+            Relationships = await _service.GetAllRelationshipsAsync(cancellationToken);
         }
     }
 }

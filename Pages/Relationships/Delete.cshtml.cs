@@ -17,14 +17,14 @@ namespace RevelioII.Pages.Relationships
         [BindProperty]
         public Relationship GraphRelationship { get; set; } = default!;
 
-        public async Task<IActionResult> OnGetAsync(int? id)
+        public async Task<IActionResult> OnGetAsync(int? id, CancellationToken cancellationToken)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var relationship = await _service.GetRelationshipAsync(id.Value);
+            var relationship = await _service.GetRelationshipAsync(id.Value, cancellationToken);
             if (relationship == null)
             {
                 return NotFound();
@@ -34,14 +34,14 @@ namespace RevelioII.Pages.Relationships
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAsync(int? id)
+        public async Task<IActionResult> OnPostAsync(int? id, CancellationToken cancellationToken)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            await _service.DeleteRelationshipAsync(id.Value);
+            await _service.DeleteRelationshipAsync(id.Value, cancellationToken);
             return RedirectToPage("./Index");
         }
     }

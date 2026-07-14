@@ -19,12 +19,16 @@ namespace RevelioII.Pages
 
         }
 
-        public async Task<IActionResult> OnGetGraphDataAsync()
+        public async Task<IActionResult> OnGetGraphDataAsync(CancellationToken cancellationToken)
         {
             try
             {
-                var graph = await _graphManagementService.GetGraphViewAsync();
+                var graph = await _graphManagementService.GetGraphViewAsync(cancellationToken);
                 return new JsonResult(graph);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {

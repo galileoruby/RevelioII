@@ -3,3 +3,8 @@ obj/
 RevelioII.UnitTests/bin/
 RevelioII.UnitTests/obj/
 .vs/
+*.user
+*.suo
+packages/
+RevelioIIGraph.db-shm
+RevelioIIGraph.db-wal

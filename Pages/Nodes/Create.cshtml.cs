@@ -21,14 +21,14 @@ namespace RevelioII.Pages.Nodes
         {
         }
 
-        public async Task<IActionResult> OnPostAsync()
+        public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid)
             {
                 return Page();
             }
 
-            await _service.CreateNodeAsync(GraphNode);
+            await _service.CreateNodeAsync(GraphNode, cancellationToken);
             return RedirectToPage("./Index");
         }
     }

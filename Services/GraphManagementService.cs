@@ -7,17 +7,19 @@ namespace RevelioII.Services
     public class GraphManagementService : IGraphManagementService
     {
         private readonly IGraphRepository _repository;
+        private readonly HttpClient? _httpClient;
 
-        public GraphManagementService(IGraphRepository repository)
+        public GraphManagementService(IGraphRepository repository, HttpClient? httpClient = null)
         {
             _repository = repository;
+            _httpClient = httpClient;
         }
 
-        public Task<IEnumerable<Node>> GetAllNodesAsync() => _repository.GetNodesAsync();
+        public Task<IEnumerable<Node>> GetAllNodesAsync(CancellationToken cancellationToken = default) => _repository.GetNodesAsync(cancellationToken);
 
-        public async Task<GraphViewDto> GetGraphViewAsync()
+        public async Task<GraphViewDto> GetGraphViewAsync(CancellationToken cancellationToken = default)
         {
-            var graph = await _repository.GetGraphAsync();
+            var graph = await _repository.GetGraphAsync(cancellationToken);
 
             return new GraphViewDto
             {
@@ -45,31 +47,41 @@ namespace RevelioII.Services
             };
         }
 
-        public Task<Node?> GetNodeAsync(int id) => _repository.GetNodeByIdAsync(id);
+        public Task<Node?> GetNodeAsync(int id, CancellationToken cancellationToken = default) => _repository.GetNodeByIdAsync(id, cancellationToken);
 
-        public Task<Node> CreateNodeAsync(Node node)
+        public async Task<Node> CreateNodeAsync(Node node, CancellationToken cancellationToken = default)
         {
-            // Business logic/validation could go here
-            //var _ = this.CreateNodeSlackAsync(node); // Notify Slack asynchronously without awaiting
+            var createdNode = await _repository.AddNodeAsync(node, cancellationToken);
 
-            var _ = NotifySlackAsync($"New node created: {node.Label}");
+            try
+            {
+                await NotifySlackAsync($"New node created: {node.Label}", cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch
+            {
+                // Preserve node creation flow when notification delivery fails for reasons other than request cancellation.
+            }
 
-            return _repository.AddNodeAsync(node);
+            return createdNode;
         }
 
-        public Task UpdateNodeAsync(Node node) => _repository.UpdateNodeAsync(node);
+        public Task UpdateNodeAsync(Node node, CancellationToken cancellationToken = default) => _repository.UpdateNodeAsync(node, cancellationToken);
 
-        public Task DeleteNodeAsync(int id) => _repository.DeleteNodeAsync(id);
+        public Task DeleteNodeAsync(int id, CancellationToken cancellationToken = default) => _repository.DeleteNodeAsync(id, cancellationToken);
 
-        public Task<IEnumerable<Relationship>> GetAllRelationshipsAsync() => _repository.GetRelationshipsAsync();
+        public Task<IEnumerable<Relationship>> GetAllRelationshipsAsync(CancellationToken cancellationToken = default) => _repository.GetRelationshipsAsync(cancellationToken);
 
-        public Task<Relationship?> GetRelationshipAsync(int id) => _repository.GetRelationshipByIdAsync(id);
+        public Task<Relationship?> GetRelationshipAsync(int id, CancellationToken cancellationToken = default) => _repository.GetRelationshipByIdAsync(id, cancellationToken);
 
-        public async Task<Relationship> CreateRelationshipAsync(Relationship relationship)
+        public async Task<Relationship> CreateRelationshipAsync(Relationship relationship, CancellationToken cancellationToken = default)
         {
             // Validation: Ensure both Source and Target nodes exist before linking them
-            var sourceNode = await _repository.GetNodeByIdAsync(relationship.SourceNodeId);
-            var targetNode = await _repository.GetNodeByIdAsync(relationship.TargetNodeId);
+            var sourceNode = await _repository.GetNodeByIdAsync(relationship.SourceNodeId, cancellationToken);
+            var targetNode = await _repository.GetNodeByIdAsync(relationship.TargetNodeId, cancellationToken);
 
             if (sourceNode == null)
                 throw new ArgumentException($"Source Node with Id {relationship.SourceNodeId} does not exist.");
@@ -77,28 +89,39 @@ namespace RevelioII.Services
             if (targetNode == null)
                 throw new ArgumentException($"Target Node with Id {relationship.TargetNodeId} does not exist.");
 
-            return await _repository.AddRelationshipAsync(relationship);
+            return await _repository.AddRelationshipAsync(relationship, cancellationToken);
         }
 
-        public Task UpdateRelationshipAsync(Relationship relationship) => _repository.UpdateRelationshipAsync(relationship);
+        public Task UpdateRelationshipAsync(Relationship relationship, CancellationToken cancellationToken = default) => _repository.UpdateRelationshipAsync(relationship, cancellationToken);
 
-        public Task DeleteRelationshipAsync(int id) => _repository.DeleteRelationshipAsync(id);
+        public Task DeleteRelationshipAsync(int id, CancellationToken cancellationToken = default) => _repository.DeleteRelationshipAsync(id, cancellationToken);
 
 
-        public async Task<Node> CreateNodeSlackAsync(Node node)
+        public async Task<Node> CreateNodeSlackAsync(Node node, CancellationToken cancellationToken = default)
         {
-            var createdNode = await _repository.AddNodeAsync(node);
-            await NotifySlackAsync($"New node created: {node.Label}");
+            var createdNode = await _repository.AddNodeAsync(node, cancellationToken);
+            await NotifySlackAsync($"New node created: {node.Label}", cancellationToken);
             return createdNode;
         }
 
-        public async Task NotifySlackAsync(string message)
+        public async Task NotifySlackAsync(string message, CancellationToken cancellationToken = default)
         {
             var webhookUrl = Environment.GetEnvironmentVariable("SLACK_WEBHOOK_URL") 
                 ?? throw new InvalidOperationException("SLACK_WEBHOOK_URL not configured");
-            
-            using var client = new HttpClient();
-            await client.PostAsJsonAsync(webhookUrl, new { text = message });
+
+            var client = _httpClient ?? new HttpClient();
+
+            try
+            {
+                await client.PostAsJsonAsync(webhookUrl, new { text = message }, cancellationToken);
+            }
+            finally
+            {
+                if (_httpClient is null)
+                {
+                    client.Dispose();
+                }
+            }
         }
 
     }

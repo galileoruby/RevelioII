@@ -5,18 +5,18 @@ namespace RevelioII.Repositories
     public interface IGraphRepository
     {
         // Node Operations
-        Task<IEnumerable<Node>> GetNodesAsync();
-        Task<(IReadOnlyCollection<Node> Nodes, IReadOnlyCollection<Relationship> Relationships)> GetGraphAsync();
-        Task<Node?> GetNodeByIdAsync(int id);
-        Task<Node> AddNodeAsync(Node node);
-        Task UpdateNodeAsync(Node node);
-        Task DeleteNodeAsync(int id);
+        Task<IEnumerable<Node>> GetNodesAsync(CancellationToken cancellationToken = default);
+        Task<(IReadOnlyCollection<Node> Nodes, IReadOnlyCollection<Relationship> Relationships)> GetGraphAsync(CancellationToken cancellationToken = default);
+        Task<Node?> GetNodeByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<Node> AddNodeAsync(Node node, CancellationToken cancellationToken = default);
+        Task UpdateNodeAsync(Node node, CancellationToken cancellationToken = default);
+        Task DeleteNodeAsync(int id, CancellationToken cancellationToken = default);
 
         // Relationship Operations
-        Task<IEnumerable<Relationship>> GetRelationshipsAsync();
-        Task<Relationship?> GetRelationshipByIdAsync(int id);
-        Task<Relationship> AddRelationshipAsync(Relationship relationship);
-        Task UpdateRelationshipAsync(Relationship relationship);
-        Task DeleteRelationshipAsync(int id);
+        Task<IEnumerable<Relationship>> GetRelationshipsAsync(CancellationToken cancellationToken = default);
+        Task<Relationship?> GetRelationshipByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<Relationship> AddRelationshipAsync(Relationship relationship, CancellationToken cancellationToken = default);
+        Task UpdateRelationshipAsync(Relationship relationship, CancellationToken cancellationToken = default);
+        Task DeleteRelationshipAsync(int id, CancellationToken cancellationToken = default);
     }
 }

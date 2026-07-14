@@ -17,22 +17,22 @@ namespace RevelioII.Pages.Nodes
         [BindProperty]
         public Node GraphNode { get; set; } = default!;
 
-        public async Task<IActionResult> OnGetAsync(int? id)
+        public async Task<IActionResult> OnGetAsync(int? id, CancellationToken cancellationToken)
         {
             if (id == null) return NotFound();
 
-            var node = await _service.GetNodeAsync(id.Value);
+            var node = await _service.GetNodeAsync(id.Value, cancellationToken);
             if (node == null) return NotFound();
 
             GraphNode = node;
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAsync()
+        public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid) return Page();
 
-            await _service.UpdateNodeAsync(GraphNode);
+            await _service.UpdateNodeAsync(GraphNode, cancellationToken);
             return RedirectToPage("./Index");
         }
     }
