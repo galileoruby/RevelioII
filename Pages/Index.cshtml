@@ -45,11 +45,17 @@
         </div>
 
         <div class="graph-stage-overlay graph-stage-overlay-right">
-            <section class="graph-panel-card graph-panel-card-compact" id="graph-hover-panel">
+            <section class="graph-panel-card graph-panel-card-compact" id="graph-hover-panel" role="region" aria-label="Relationship details">
                 <h2>Relationship details</h2>
                 <div id="graph-hover-content" class="graph-hover-content">
                     <p class="graph-panel-empty">Hover a node to inspect its connections.</p>
                 </div>
+                <section class="graph-node-properties-panel" id="graph-node-properties-panel" role="region" aria-label="Node properties" aria-live="polite">
+                    <h3 class="graph-node-properties-title">Node Properties</h3>
+                    <div id="graph-node-properties-content" class="graph-node-properties-content">
+                        <p class="graph-panel-empty">Hover or select a node to inspect property details.</p>
+                    </div>
+                </section>
             </section>
         </div>
 

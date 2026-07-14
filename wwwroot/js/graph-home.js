@@ -1,6 +1,7 @@
 (() => {
     const graphContainer = document.getElementById("graph-container");
     const hoverContent = document.getElementById("graph-hover-content");
+    const nodePropertiesContent = document.getElementById("graph-node-properties-content");
     const hoverPanel = document.getElementById("graph-hover-panel");
     const emptyState = document.getElementById("graph-empty-state");
 
@@ -10,6 +11,18 @@
 
     const graphUrl = graphContainer.dataset.graphUrl;
     const highlightClass = "graph-highlight";
+    const rootPath = "$";
+    const previewEntryCount = 6;
+    const largePayloadByteThreshold = 2048;
+    const largePayloadTopLevelThreshold = 20;
+
+    const panelState = {
+        selectedNodeId: null,
+        activeNodeData: null,
+        activeRelationships: [],
+        showAllRootEntries: false,
+        expandedPaths: new Set([rootPath])
+    };
 
     fetch(graphUrl, {
         headers: {
@@ -36,14 +49,19 @@
             emptyState?.classList.add("d-none");
             renderGraph(nodes, edges);
             setDefaultHoverMessage(nodes.length, edges.length);
+            setDefaultPropertiesMessage();
         })
         .catch(error => {
             console.error("Failed to load or render graph data.", error);
             hoverPanel?.classList.add("graph-panel-error");
             hoverContent.innerHTML = `<p class="graph-panel-empty">Unable to load graph data.</p><p class="graph-panel-muted">${escapeHtml(error?.message ?? "Unknown graph error.")}</p>`;
+            if (nodePropertiesContent) {
+                nodePropertiesContent.innerHTML = `<p class="graph-panel-empty">Unable to load node properties.</p>`;
+            }
         });
 
     function renderGraph(nodes, edges) {
+        const nodeLabelById = new Map(nodes.map(node => [getNodeId(node.id), node.label]));
         const elements = [
             ...nodes.map(node => ({
                 data: {
@@ -62,8 +80,8 @@
                     target: getNodeId(edge.targetNodeId),
                     label: edge.relationType,
                     relationType: edge.relationType,
-                    sourceLabel: edge.sourceLabel,
-                    targetLabel: edge.targetLabel,
+                    sourceLabel: edge.sourceLabel ?? nodeLabelById.get(getNodeId(edge.sourceNodeId)) ?? `Node ${edge.sourceNodeId}`,
+                    targetLabel: edge.targetLabel ?? nodeLabelById.get(getNodeId(edge.targetNodeId)) ?? `Node ${edge.targetNodeId}`,
                     properties: edge.properties ?? ""
                 }
             }))
@@ -136,10 +154,10 @@
                     selector: `node.${highlightClass}`,
                     style: {
                         opacity: 1,
-                        "border-color": "#ffffff",
+                        "border-color": "#a4dcff",
                         "border-width": 3,
                         "shadow-blur": 24,
-                        "shadow-color": "rgba(255, 255, 255, 0.22)",
+                        "shadow-color": "rgba(125, 209, 255, 0.35)",
                         "shadow-opacity": 1,
                         "shadow-offset-x": 0,
                         "shadow-offset-y": 0,
@@ -156,16 +174,62 @@
 
         cy.on("mouseover", "node", event => {
             const node = event.target;
-            cy.elements().removeClass(highlightClass);
-            node.addClass(highlightClass);
+            if (panelState.selectedNodeId && panelState.selectedNodeId !== node.id()) {
+                return;
+            }
 
-            updateHoverPanel(node, node.connectedEdges().map(edge => edge.data()));
+            hydratePanelForNode(cy, node);
         });
 
-        cy.on("mouseout", "node", () => {
-            cy.elements().removeClass(highlightClass);
-            setDefaultHoverMessage(nodes.length, edges.length);
+        cy.on("tap", "node", event => {
+            const node = event.target;
+            panelState.selectedNodeId = node.id();
+            hydratePanelForNode(cy, node);
         });
+
+        nodePropertiesContent?.addEventListener("click", event => {
+            const toggleAllButton = event.target.closest("[data-toggle-all]");
+            if (toggleAllButton) {
+                panelState.showAllRootEntries = !panelState.showAllRootEntries;
+                renderNodePropertiesPanel();
+                return;
+            }
+
+            const togglePathButton = event.target.closest("[data-toggle-path]");
+            if (!togglePathButton) {
+                return;
+            }
+
+            const path = togglePathButton.getAttribute("data-toggle-path");
+            if (!path) {
+                return;
+            }
+
+            if (panelState.expandedPaths.has(path)) {
+                panelState.expandedPaths.delete(path);
+            } else {
+                panelState.expandedPaths.add(path);
+            }
+
+            renderNodePropertiesPanel();
+        });
+    }
+
+    function hydratePanelForNode(cy, node) {
+        cy.elements().removeClass(highlightClass);
+        node.addClass(highlightClass);
+
+        panelState.activeNodeData = {
+            label: node.data("label"),
+            type: node.data("type"),
+            properties: node.data("properties")
+        };
+        panelState.activeRelationships = node.connectedEdges().map(edge => edge.data());
+        panelState.showAllRootEntries = false;
+        panelState.expandedPaths = new Set([rootPath]);
+
+        updateHoverPanel(node, panelState.activeRelationships);
+        renderNodePropertiesPanel();
     }
 
     function updateHoverPanel(node, connectedEdges) {
@@ -186,12 +250,235 @@
         `;
     }
 
+    function renderNodePropertiesPanel() {
+        if (!nodePropertiesContent) {
+            return;
+        }
+
+        const node = panelState.activeNodeData;
+        if (!node) {
+            setDefaultPropertiesMessage();
+            return;
+        }
+
+        const parsedResult = safeParseProperties(node.properties);
+        if (parsedResult.state === "empty") {
+            nodePropertiesContent.innerHTML = `
+                <p class="graph-panel-muted">Node: ${escapeHtml(node.label)}</p>
+                <p class="graph-panel-empty">No node properties are available.</p>
+            `;
+            return;
+        }
+
+        if (parsedResult.state === "invalid") {
+            nodePropertiesContent.innerHTML = `
+                <p class="graph-panel-muted">Node: ${escapeHtml(node.label)}</p>
+                <p class="graph-properties-error">Properties are not valid JSON.</p>
+                <pre class="graph-properties-raw" aria-label="Invalid node properties payload">${escapeHtml(parsedResult.rawPreview)}</pre>
+            `;
+            return;
+        }
+
+        const payloadSummary = summarizePayload(parsedResult.value, parsedResult.raw);
+        const isLargePayload = payloadSummary.rawBytes > largePayloadByteThreshold
+            || payloadSummary.topLevelEntries > largePayloadTopLevelThreshold;
+
+        const rootMarkup = renderJsonValue(parsedResult.value, rootPath, {
+            isRoot: true,
+            isLargePayload
+        });
+
+        const toggleAllLabel = panelState.showAllRootEntries
+            ? "Show curated view"
+            : "Show all";
+
+        const shouldShowToggleAll = payloadSummary.topLevelEntries > previewEntryCount;
+        const largeSummaryMarkup = isLargePayload
+            ? `<p class="graph-panel-muted">Large payload detected (${payloadSummary.rawBytes} bytes, ${payloadSummary.topLevelEntries} top-level entries). Showing a summarized view first.</p>`
+            : "";
+
+        nodePropertiesContent.innerHTML = `
+            <div class="graph-properties-meta">
+                <p class="graph-panel-muted">Node: ${escapeHtml(node.label)} (${escapeHtml(node.type)})</p>
+                <p class="graph-panel-muted">Payload: ${payloadSummary.rawBytes} bytes</p>
+            </div>
+            ${largeSummaryMarkup}
+            <div class="graph-json-tree" role="tree" aria-label="Node properties JSON">
+                ${rootMarkup}
+            </div>
+            ${shouldShowToggleAll ? `<button type="button" class="graph-json-toggle-all" data-toggle-all="true" aria-label="Toggle full property view">${toggleAllLabel}</button>` : ""}
+        `;
+    }
+
+    function renderJsonValue(value, path, options = {}) {
+        const isRoot = options.isRoot === true;
+        const isLargePayload = options.isLargePayload === true;
+
+        if (Array.isArray(value)) {
+            const shouldCollapse = !isRoot && !panelState.expandedPaths.has(path);
+            const headerLabel = `Array(${value.length})`;
+            if (shouldCollapse) {
+                return renderCollapsedContainer(path, headerLabel);
+            }
+
+            const visibleItems = isRoot && !panelState.showAllRootEntries
+                ? value.slice(0, previewEntryCount)
+                : value;
+
+            return `
+                ${renderExpandableHeader(path, headerLabel, true, isRoot)}
+                <ul class="graph-json-list">
+                    ${visibleItems.map((item, index) => `
+                        <li>
+                            <span class="graph-json-key">[${index}]</span>
+                            ${renderJsonValue(item, `${path}[${index}]`, { isLargePayload })}
+                        </li>
+                    `).join("")}
+                </ul>
+            `;
+        }
+
+        if (isPlainObject(value)) {
+            const keys = Object.keys(value).sort((a, b) => a.localeCompare(b));
+            const shouldCollapse = !isRoot && !panelState.expandedPaths.has(path);
+            const headerLabel = `Object(${keys.length})`;
+            if (shouldCollapse) {
+                return renderCollapsedContainer(path, headerLabel);
+            }
+
+            const curatedRoot = isRoot && !panelState.showAllRootEntries;
+            const visibleKeys = curatedRoot
+                ? keys.slice(0, previewEntryCount)
+                : keys;
+
+            const rows = visibleKeys.map(key => {
+                const keyPath = `${path}.${key}`;
+                return `
+                    <li>
+                        <span class="graph-json-key">${escapeHtml(key)}</span>
+                        ${renderJsonValue(value[key], keyPath, { isLargePayload })}
+                    </li>
+                `;
+            }).join("");
+
+            const hiddenCount = keys.length - visibleKeys.length;
+            const curatedMessage = curatedRoot && hiddenCount > 0
+                ? `<p class="graph-panel-muted">Showing ${visibleKeys.length} of ${keys.length} properties.</p>`
+                : "";
+            const largeMessage = isRoot && isLargePayload
+                ? `<p class="graph-panel-muted">Nested sections start collapsed for readability.</p>`
+                : "";
+
+            return `
+                ${renderExpandableHeader(path, headerLabel, true, isRoot)}
+                ${curatedMessage}
+                ${largeMessage}
+                <ul class="graph-json-list">
+                    ${rows}
+                </ul>
+            `;
+        }
+
+        return renderPrimitiveValue(value);
+    }
+
+    function renderExpandableHeader(path, label, expanded, isRoot) {
+        if (isRoot) {
+            return `<div class="graph-json-root-label">${escapeHtml(label)}</div>`;
+        }
+
+        return `<button type="button" class="graph-json-toggle" data-toggle-path="${escapeHtml(path)}" aria-expanded="${expanded ? "true" : "false"}" aria-label="Toggle ${escapeHtml(label)}">${expanded ? "Collapse" : "Expand"} ${escapeHtml(label)}</button>`;
+    }
+
+    function renderCollapsedContainer(path, label) {
+        return `<button type="button" class="graph-json-toggle" data-toggle-path="${escapeHtml(path)}" aria-expanded="false" aria-label="Expand ${escapeHtml(label)}">Expand ${escapeHtml(label)}</button>`;
+    }
+
+    function renderPrimitiveValue(value) {
+        if (value === null) {
+            return `<span class="graph-json-value graph-json-null">null</span>`;
+        }
+
+        switch (typeof value) {
+        case "string":
+            return `<span class="graph-json-value graph-json-string">"${escapeHtml(value)}"</span>`;
+        case "number":
+            return `<span class="graph-json-value graph-json-number">${value}</span>`;
+        case "boolean":
+            return `<span class="graph-json-value graph-json-boolean">${value}</span>`;
+        default:
+            return `<span class="graph-json-value">${escapeHtml(String(value))}</span>`;
+        }
+    }
+
+    function safeParseProperties(rawProperties) {
+        if (rawProperties === null || rawProperties === undefined) {
+            return { state: "empty" };
+        }
+
+        const text = String(rawProperties).trim();
+        if (text.length === 0) {
+            return { state: "empty" };
+        }
+
+        try {
+            const parsed = JSON.parse(text);
+            if (parsed === null) {
+                return { state: "empty" };
+            }
+
+            return {
+                state: "valid",
+                value: parsed,
+                raw: text
+            };
+        } catch {
+            return {
+                state: "invalid",
+                rawPreview: text.slice(0, 800)
+            };
+        }
+    }
+
+    function summarizePayload(parsedValue, rawText) {
+        const topLevelEntries = Array.isArray(parsedValue)
+            ? parsedValue.length
+            : isPlainObject(parsedValue)
+                ? Object.keys(parsedValue).length
+                : 1;
+
+        return {
+            topLevelEntries,
+            rawBytes: getUtf8Length(rawText)
+        };
+    }
+
+    function getUtf8Length(value) {
+        if (typeof TextEncoder !== "undefined") {
+            return new TextEncoder().encode(value).length;
+        }
+
+        return unescape(encodeURIComponent(value)).length;
+    }
+
+    function isPlainObject(value) {
+        return value !== null && typeof value === "object" && !Array.isArray(value);
+    }
+
     function setDefaultHoverMessage(nodeCount, edgeCount) {
         hoverPanel?.classList.remove("graph-panel-error");
         hoverContent.innerHTML = `
             <p class="graph-panel-muted">${nodeCount} nodes and ${edgeCount} relationships are currently visible.</p>
             <p class="graph-panel-empty">Hover a node to see every direct relationship it has with other nodes.</p>
         `;
+    }
+
+    function setDefaultPropertiesMessage() {
+        if (!nodePropertiesContent) {
+            return;
+        }
+
+        nodePropertiesContent.innerHTML = "<p class=\"graph-panel-empty\">Hover or select a node to inspect property details.</p>";
     }
 
     function getNodeId(id) {

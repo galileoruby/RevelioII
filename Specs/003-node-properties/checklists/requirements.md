@@ -31,5 +31,6 @@
 
 ## Notes
 
-- Checklist completed for spec-only delivery.
-- No `plan.md` or `tasks.md` were created by design, per request.
+- Checklist validated for implementation readiness and maintained as complete.
+- Node Properties feature implementation completed for `003-node-properties`.
+- Validation executed with `dotnet test` (all tests passing).

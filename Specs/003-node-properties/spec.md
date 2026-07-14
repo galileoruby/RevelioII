@@ -45,10 +45,12 @@ As a final user, when node properties are empty, null, or invalid, I want clear 
 * **REQ-003 (Readable JSON Rendering):** Property JSON MUST be shown in a readable way, including visual distinction for keys and value types.
 * **REQ-004 (Nested Data):** Nested objects and arrays MUST be renderable in a hierarchical, expandable/collapsible structure.
 * **REQ-005 (State Handling):** Empty, null, and invalid property payloads MUST show explicit non-breaking states.
-* **REQ-006 (Large Payload Handling):** Large property payloads MUST load in a summarized/collapsed form with user-controlled expansion.
+* **REQ-006 (Large Payload Handling):** Large property payloads (greater than 2 KB or more than 20 top-level keys) MUST load in a summarized/collapsed form with user-controlled expansion.
 * **REQ-007 (Interaction Scope):** Hover behavior MUST remain node-only and MUST NOT add relationship hover visual effects.
 * **REQ-008 (Mobile Equivalence):** Mobile interaction MUST provide equivalent access to node properties via selection/tap behavior.
 * **REQ-009 (Behavior Preservation):** Existing graph navigation and relationship details behavior MUST remain unchanged except where needed for this feature.
+* **REQ-010 (Details Persistence):** Node properties shown from hover MUST remain visible until the user selects a different node.
+* **REQ-011 (Default Visibility):** The initial node properties view MUST display a curated subset and provide a "Show all" interaction to reveal the complete payload.
 
 ## Success Criteria *(mandatory)*
 
@@ -67,15 +69,9 @@ As a final user, when node properties are empty, null, or invalid, I want clear 
 
 ## Assumptions & Dependencies
 
-* Node properties are currently stored as straightforward JSON payloads.
+* Node properties are currently stored as straightforward JSON payloads, but runtime input may still include empty or invalid values.
 * Relationship details is the approved location for presenting node property details.
 * There is at least one representative dataset with nested JSON available for validation.
-
-## Open Questions
-
-1. Should node properties in relationship details be always visible after hover, or only while hover remains active?
-2. What payload-size threshold defines "large" for default collapsed rendering?
-3. Should the initial view show all properties by default or a curated subset with "show all" interaction?
 
 ## Key Entities
 

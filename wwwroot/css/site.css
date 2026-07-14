@@ -115,6 +115,125 @@ body {
   gap: 0.45rem;
 }
 
+.graph-node-properties-panel {
+  margin-top: 1rem;
+  border-top: 1px solid rgba(125, 209, 255, 0.2);
+  padding-top: 0.8rem;
+}
+
+.graph-node-properties-title {
+  margin: 0;
+  color: #9fdcff;
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.graph-node-properties-content {
+  margin-top: 0.55rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.graph-properties-meta {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.graph-properties-error {
+  margin: 0;
+  color: #ffb4ad;
+  font-weight: 600;
+}
+
+.graph-properties-raw {
+  margin: 0;
+  max-height: 8.5rem;
+  overflow: auto;
+  border: 1px solid rgba(255, 163, 151, 0.35);
+  border-radius: 0.45rem;
+  padding: 0.45rem;
+  background: rgba(53, 13, 13, 0.5);
+  color: #ffd7d1;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.graph-json-tree {
+  border: 1px solid rgba(125, 209, 255, 0.18);
+  border-radius: 0.6rem;
+  padding: 0.55rem;
+  background: rgba(4, 14, 26, 0.52);
+}
+
+.graph-json-root-label {
+  color: #c3e8ff;
+  font-size: 0.81rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.graph-json-list {
+  list-style: none;
+  margin: 0;
+  padding-left: 0.9rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.graph-json-list li {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.graph-json-key {
+  color: #b6ddf8;
+  font-size: 0.77rem;
+  font-weight: 700;
+}
+
+.graph-json-value {
+  font-size: 0.77rem;
+  word-break: break-word;
+}
+
+.graph-json-string {
+  color: #e2c3ff;
+}
+
+.graph-json-number {
+  color: #89f4c9;
+}
+
+.graph-json-boolean {
+  color: #ffd483;
+}
+
+.graph-json-null {
+  color: #b5bec7;
+  font-style: italic;
+}
+
+.graph-json-toggle,
+.graph-json-toggle-all {
+  width: fit-content;
+  border: 1px solid rgba(125, 209, 255, 0.35);
+  border-radius: 0.4rem;
+  padding: 0.24rem 0.48rem;
+  background: rgba(12, 36, 64, 0.82);
+  color: #d9f1ff;
+  font-size: 0.73rem;
+  font-weight: 600;
+}
+
+.graph-json-toggle:hover,
+.graph-json-toggle:focus,
+.graph-json-toggle-all:hover,
+.graph-json-toggle-all:focus {
+  border-color: #9fdcff;
+  color: #f4fbff;
+  outline: none;
+}
+
 .graph-hover-node-title {
   color: #d9f3ff;
   font-size: 1.1rem;
@@ -215,6 +334,10 @@ body {
   .graph-canvas,
   .graph-empty-state {
     min-height: 60vh;
+  }
+
+  .graph-panel-card-compact {
+    width: 100%;
   }
 }
 

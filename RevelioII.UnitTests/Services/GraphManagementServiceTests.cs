@@ -78,6 +78,61 @@ namespace RevelioII.UnitTests.Services
         }
 
         [Fact]
+        public async Task GetGraphViewAsync_WhenNodePropertiesContainInvalidJson_PreservesRawPayload()
+        {
+            // Arrange
+            const string invalidJson = "{\"unclosed\":true";
+            var nodes = new[]
+            {
+                new Node { Id = 1, Label = "Invalid", Type = "System", Properties = invalidJson },
+            };
+
+            var repositoryMock = new Mock<IGraphRepository>();
+            repositoryMock
+                .Setup(repository => repository.GetGraphAsync())
+                .ReturnsAsync((nodes, Array.Empty<Relationship>()));
+
+            var service = new GraphManagementService(repositoryMock.Object);
+
+            // Act
+            var result = await service.GetGraphViewAsync();
+
+            // Assert
+            var node = Assert.Single(result.Nodes);
+            Assert.Equal(invalidJson, node.Properties);
+            repositoryMock.Verify(repository => repository.GetGraphAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetGraphViewAsync_WhenNodePropertiesAreNullOrEmpty_PreservesValues()
+        {
+            // Arrange
+            var nodes = new[]
+            {
+                new Node { Id = 1, Label = "NullProps", Type = "System", Properties = null },
+                new Node { Id = 2, Label = "EmptyProps", Type = "System", Properties = string.Empty },
+            };
+
+            var repositoryMock = new Mock<IGraphRepository>();
+            repositoryMock
+                .Setup(repository => repository.GetGraphAsync())
+                .ReturnsAsync((nodes, Array.Empty<Relationship>()));
+
+            var service = new GraphManagementService(repositoryMock.Object);
+
+            // Act
+            var result = await service.GetGraphViewAsync();
+
+            // Assert
+            var nullPropsNode = result.Nodes.Single(node => node.Id == 1);
+            var emptyPropsNode = result.Nodes.Single(node => node.Id == 2);
+
+            Assert.Null(nullPropsNode.Properties);
+            Assert.Equal(string.Empty, emptyPropsNode.Properties);
+            repositoryMock.Verify(repository => repository.GetGraphAsync(), Times.Once);
+        }
+
+        [Fact]
         public async Task Constructor_WithRepository_UsesRepositoryForSubsequentCalls()
         {
             // Arrange
