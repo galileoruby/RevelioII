@@ -3,6 +3,7 @@ obj/
 RevelioII.UnitTests/bin/
 RevelioII.UnitTests/obj/
 .vs/
+.vs/CopilotSnapShots/
 *.user
 *.suo
 packages/
